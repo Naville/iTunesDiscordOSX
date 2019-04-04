@@ -1,6 +1,7 @@
 #include <discord_rpc.h>
 #include <discord_register.h>
 #include <cinttypes>
+#include <CoreFoundation/CoreFoundation.h>
 #import "iTunes.h"
 
 void LoadPresence(){
@@ -12,20 +13,22 @@ void LoadPresence(){
   discordPresence.state = [currentTrack.artist UTF8String];
   time_t seconds=time(NULL);
   const char* dura=[currentTrack.time UTF8String];//In MM:SS format because the direct getter is broken
+  if(dura==nil){
+    return;
+  }
   char min[3]={'\0'};
   char sec[3]={'\0'};
   memcpy(&min,dura,2);
   memcpy(&sec,&dura[2],2);
   discordPresence.startTimestamp = seconds+floor(ITA.playerPosition+0.5);
   discordPresence.endTimestamp = seconds+atoi(min)*60+atoi(sec)-floor(ITA.playerPosition+0.5);
-  /*printf("Orig:%s Min:%s Sec:%s\n",dura,min,sec);
-  printf("PlayerPos:%lld Duration:%s\n",discordPresence.startTimestamp-seconds,"12");
-  printf("Time:%ld Position:%f Start:%lld End:%lld\n",seconds,floor(ITA.playerPosition+0.5),discordPresence.startTimestamp,discordPresence.endTimestamp);*/
   discordPresence.largeImageKey="itunes";
   discordPresence.smallImageKey="itunes";
   Discord_UpdatePresence(&discordPresence);
 }
-
+static void cb(CFNotificationCenterRef center, void *observer, CFNotificationName name, const void *object, CFDictionaryRef userInfo){
+  LoadPresence();
+}
 void Ready_Discord(const DiscordUser* request){
   printf("Logged in as:%s\n",request->username);
 }
@@ -52,6 +55,8 @@ int main(int argc, char const *argv[]) {
     LoadPresence();
     return;
   }];
+  CFNotificationCenterRef nc=CFNotificationCenterGetDistributedCenter();
+  CFNotificationCenterAddObserver(nc,nullptr,cb,CFSTR("com.apple.iTunes.playerInfo"),nullptr,CFNotificationSuspensionBehaviorDeliverImmediately);
   [tim fire];
   [[NSRunLoop currentRunLoop] run];
   Discord_Shutdown();
