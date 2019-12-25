@@ -10,8 +10,17 @@ void LoadPresence(){
   iTunesTrack* currentTrack=[ITA currentTrack];
   discordPresence.details = [currentTrack.name UTF8String];
   discordPresence.state = [currentTrack.artist UTF8String];
-  discordPresence.startTimestamp = time(0)+static_cast<std::int64_t>(ITA.playerPosition);
-  discordPresence.endTimestamp = time(0)+static_cast<std::int64_t>(currentTrack.duration);
+  time_t seconds=time(NULL);
+  const char* dura=[currentTrack.time UTF8String];//In MM:SS format because the direct getter is broken
+  char min[3]={'\0'};
+  char sec[3]={'\0'};
+  memcpy(&min,dura,2);
+  memcpy(&sec,&dura[2],2);
+  discordPresence.startTimestamp = seconds+floor(ITA.playerPosition+0.5);
+  discordPresence.endTimestamp = seconds+atoi(min)*60+atoi(sec)-floor(ITA.playerPosition+0.5);
+  /*printf("Orig:%s Min:%s Sec:%s\n",dura,min,sec);
+  printf("PlayerPos:%lld Duration:%s\n",discordPresence.startTimestamp-seconds,"12");
+  printf("Time:%ld Position:%f Start:%lld End:%lld\n",seconds,floor(ITA.playerPosition+0.5),discordPresence.startTimestamp,discordPresence.endTimestamp);*/
   discordPresence.largeImageKey="itunes";
   discordPresence.smallImageKey="itunes";
   Discord_UpdatePresence(&discordPresence);
