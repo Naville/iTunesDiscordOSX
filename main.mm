@@ -2,13 +2,22 @@
 #include <discord_register.h>
 #include <cinttypes>
 #include <CoreFoundation/CoreFoundation.h>
+#if __MAC_OS_VERSION_MIN_REQUIRED < MAC_OS_VERSION_10_15
 #import "iTunes.h"
+#else
+#import "Music.h"
+#endif
 
 void LoadPresence(){
   DiscordRichPresence discordPresence;
   memset(&discordPresence, 0, sizeof(discordPresence));
+#if __MAC_OS_VERSION_MIN_REQUIRED < MAC_OS_VERSION_10_15
   iTunesApplication* ITA=[SBApplication applicationWithBundleIdentifier:@"com.apple.itunes"];
   iTunesTrack* currentTrack=[ITA currentTrack];
+#else
+  MusicApplication* ITA=[SBApplication applicationWithBundleIdentifier:@"com.apple.Music"];
+  MusicTrack* currentTrack=[ITA currentTrack];
+#endif
   discordPresence.details = [currentTrack.name UTF8String];
   discordPresence.state = [currentTrack.artist UTF8String];
   time_t seconds=time(NULL);
